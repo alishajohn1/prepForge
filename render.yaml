@@ -1,0 +1,23 @@
+# Render Blueprint (optional alternative backend host).
+# Render dashboard -> New -> Blueprint -> pick this repo.
+services:
+  - type: web
+    name: prepforge-api
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm ci --omit=dev
+    # migrate + seed are idempotent and safe to run on every deploy
+    startCommand: npm run db:setup && npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false   # paste your Neon connection string when prompted
+      - key: FRONTEND_URL
+        sync: false   # e.g. https://prepforge.vercel.app

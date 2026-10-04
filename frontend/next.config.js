@@ -1,8 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000',
-  },
+  // Produces a minimal self-contained server in .next/standalone (used by the Dockerfile)
+  output: process.env.NEXT_OUTPUT === 'standalone' ? 'standalone' : undefined,
+  reactStrictMode: true,
+  poweredByHeader: false,
 };
 
 module.exports = nextConfig;

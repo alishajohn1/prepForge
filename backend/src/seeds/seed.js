@@ -210,12 +210,23 @@ const problems = [
 ];
 
 const seed = async () => {
-  console.log('🌱 Seeding problems...');
+  // Safe by default: only inserts when the problems table is empty, so it can run
+  // on every deploy without wiping users' progress.
+  // `npm run seed -- --force` wipes and re-seeds (destroys all user progress!).
+  const force = process.argv.includes('--force');
+  console.log(`🌱 Seeding problems${force ? ' (FORCE: wiping existing data)' : ''}...`);
   try {
-    // Clear existing problems
-    await query('DELETE FROM user_problem_status');
-    await query('DELETE FROM problems');
-    await query('ALTER SEQUENCE problems_id_seq RESTART WITH 1');
+    const { rows } = await query('SELECT COUNT(*)::int AS count FROM problems');
+    if (rows[0].count > 0 && !force) {
+      console.log(`ℹ️  ${rows[0].count} problems already present — skipping seed.`);
+      process.exit(0);
+    }
+
+    if (force) {
+      await query('DELETE FROM user_problem_status');
+      await query('DELETE FROM problems');
+      await query('ALTER SEQUENCE problems_id_seq RESTART WITH 1');
+    }
 
     for (const problem of problems) {
       await query(

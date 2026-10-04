@@ -2,8 +2,10 @@ const { query } = require('../db/index');
 
 const getProblems = async (req, res) => {
   try {
-    const { topic, difficulty, status, search, page = 1, limit = 50 } = req.query;
+    const { topic, difficulty, status, search } = req.query;
     const userId = req.user.id;
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 500);
     const offset = (page - 1) * limit;
 
     let conditions = [];
@@ -58,7 +60,7 @@ const getProblems = async (req, res) => {
       LEFT JOIN user_problem_status ups ON p.id = ups.problem_id AND ups.user_id = $1
       ${whereClause}
       ORDER BY p.order_index ASC
-      LIMIT ${parseInt(limit)} OFFSET ${offset}
+      LIMIT ${limit} OFFSET ${offset}
     `;
 
     const countQuery = `
@@ -76,8 +78,8 @@ const getProblems = async (req, res) => {
     res.json({
       problems: problemsResult.rows,
       total: parseInt(countResult.rows[0].count),
-      page: parseInt(page),
-      limit: parseInt(limit),
+      page,
+      limit,
     });
   } catch (err) {
     console.error('Get problems error:', err);
@@ -96,9 +98,13 @@ const getTopics = async (req, res) => {
 
 const updateProblemStatus = async (req, res) => {
   try {
-    const { problemId } = req.params;
-    const { status, notes } = req.body;
+    const problemId = parseInt(req.params.problemId, 10);
+    const { status, notes } = req.body || {};
     const userId = req.user.id;
+
+    if (!Number.isInteger(problemId) || problemId < 1) {
+      return res.status(400).json({ error: 'Invalid problem id' });
+    }
 
     if (!['SOLVED', 'PENDING', 'REVISION'].includes(status)) {
       return res.status(400).json({ error: 'Invalid status' });
@@ -128,6 +134,9 @@ const updateProblemStatus = async (req, res) => {
 
     res.json({ status: result.rows[0] });
   } catch (err) {
+    if (err.code === '23503') {
+      return res.status(404).json({ error: 'Problem not found' });
+    }
     console.error('Update status error:', err);
     res.status(500).json({ error: 'Internal server error' });
   }

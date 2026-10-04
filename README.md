@@ -53,4 +53,12 @@ PrepForge is a full-stack DSA (Data Structures & Algorithms) tracker built for s
 
 ---
 
+## 🚀 Deployment
+
+Deploys for free on **Neon + Vercel** (or Render). See **[DEPLOYMENT.md](DEPLOYMENT.md)** for step-by-step instructions.
+
+Quick local run: `docker compose up --build` → http://localhost:3000
+
+---
+
 Made with 🔥 for serious DSA prep

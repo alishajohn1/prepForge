@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000').replace(/\/+$/, '');
 
 const getToken = () => {
   if (typeof window === 'undefined') return null;
@@ -13,13 +13,22 @@ const apiFetch = async (endpoint, options = {}) => {
     ...options.headers,
   };
 
-  const res = await fetch(`${API_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  let res;
+  try {
+    res = await fetch(`${API_URL}${endpoint}`, {
+      ...options,
+      headers,
+    });
+  } catch {
+    // Free-tier backends sleep when idle; the first request can take ~30-60s
+    throw new Error('Cannot reach the server. It may be waking up — please try again in a moment.');
+  }
 
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Request failed');
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401 && typeof window !== 'undefined' && token) {
+    localStorage.removeItem('prepforge_token');
+  }
+  if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
   return data;
 };
 
